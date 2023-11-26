@@ -20,24 +20,12 @@ def caesar_cipher(text, shift, encrypt=True):
     return result
 
 
-def text_to_binary(text):
-    return ''.join(format(ord(c), '08b') for c in text)
-
-
-def binary_to_text(binary):
-    text = ""
-    for i in range(0, len(binary), 8):
-        byte = binary[i:i+8]
-        text += chr(int(byte, 2))
-    return text
-
-
-def embed_message(container, binary_message):
+def embed_message(container, message):
     result = ""
     index = 0
     for char in container:
-        if char == ' ' and index < len(binary_message):
-            result += ' ' if binary_message[index] == '0' else '  '
+        if char == ' ' and index < len(message):
+            result += ' ' * (ord(message[index]) - 32)
             index += 1
         else:
             result += char
@@ -45,19 +33,16 @@ def embed_message(container, binary_message):
 
 
 def extract_message(embedded_text):
-    binary_message = ""
-    i = 0
-    while i < len(embedded_text):
-        if embedded_text[i] == ' ':
-            if i + 1 < len(embedded_text) and embedded_text[i + 1] == ' ':
-                binary_message += '1'
-                i += 2
-            else:
-                binary_message += '0'
-                i += 1
+    extracted_message = ""
+    space_count = 0
+    for char in embedded_text:
+        if char == ' ':
+            space_count += 1
         else:
-            i += 1
-    return binary_message
+            if space_count > 0:
+                extracted_message += chr(space_count + 32)  # Convert back using ASCII
+                space_count = 0
+    return extracted_message.strip()
 
 
 def main():
@@ -65,19 +50,16 @@ def main():
         message = file.read().strip()
     encrypted_message = caesar_cipher(message, 3)
 
-    binary_message = text_to_binary(encrypted_message)
-
     with open('container.txt', 'r') as file:
         container = file.read()
 
-    embedded_text = embed_message(container, binary_message)
+    embedded_text = embed_message(container, encrypted_message)
 
     with open('result.txt', 'w') as file:
         file.write(embedded_text)
 
-    extracted_binary = extract_message(embedded_text)
-    decrypted_message = binary_to_text(extracted_binary)
-    original_message = caesar_cipher(decrypted_message, 3, encrypt=False)
+    extracted_message = extract_message(embedded_text)
+    original_message = caesar_cipher(extracted_message, 3, encrypt=False)
 
     print("Original Message:", message)
     print("Decrypted Message:", original_message)
